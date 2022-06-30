@@ -2,6 +2,15 @@
 
 import argparse
 import socket
+import logging
+
+logging.basicConfig(filename='logfile.log', format='%(filename)s: %(message)s', level=logging.DEBUG)
+
+def connection_handling(client, addr):
+	client_ip = addr[0]
+	logging.info('Connection from {}'.format(client_ip))
+	print('Connection: from {}'.format(client_ip))
+	
 
 def start_server(port, bind):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)#объект сокета с агрументами - семейтсва адресов и тип сокета
@@ -10,9 +19,11 @@ def start_server(port, bind):
     #сервер-приманка чтобы открыть порт и связать с приложением
     while True:
         sock.listen(100)
-        print('Listening for connection ...')
+        print('Listening for connection on port {} ...'.format(port))
         client, addr = sock.accept()
-        print('Connected by')
+        #обработка подключения
+        connection_handling(client, addr)
+        
     client.close()
 
 if __name__ == "__main__":
