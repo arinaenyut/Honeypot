@@ -30,11 +30,7 @@ class SSH_Honeypot(paramiko.ServerInterface):
 	def get_allowed_auths(self, username):	
 		logging.info('Authentication allowed ({}) - {}'.format(self.client_ip, username))
 		return 'publickey,password'
-	
-	#допуск ключа клиента c паролем	
-	def check_auth_publickey(username, key):
-		return paramiko.AUTH_SUCCESSFUL
-        	
+	  	
         #доступ к shell	
 	def check_channel_shell_request(self, channel):
 		return True
