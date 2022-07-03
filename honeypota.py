@@ -5,9 +5,11 @@ import socket
 import logging
 import threading
 import paramiko
+import sys
 
 logging.basicConfig(filename='logfile.log', format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
 host_key = paramiko.RSAKey(filename = 'server.key') #ключ хоста
+welcome_banner = "Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.4.0-121-generic x86_64)\r\n"
 
 class SSH_Honeypot(paramiko.ServerInterface):
 
@@ -33,6 +35,7 @@ class SSH_Honeypot(paramiko.ServerInterface):
 	  	
         #доступ к shell	
 	def check_channel_shell_request(self, channel):
+		self.event.set()
 		return True
 
 	#доступ к псевдотерминалу
@@ -50,6 +53,34 @@ def connection_handling(client, addr):
 	t.add_server_key(host_key)  #добавить ключ хоста
 	server = SSH_Honeypot(client_ip) 
 	t.start_server(server=server) #запустить сервер
+	
+	channel = t.accept(30)
+	if channel is None:
+		print('Client disappeared')
+		t.close()
+	
+	server.event.wait(10)
+	if not server.event.isSet():
+		print('Client never asked shell')
+	channel.send(welcome_banner)
+	
+	run = True
+	while run:
+		channel.send('$ ')
+		data = ""
+		while not data.endswith("\r"):
+			#получить данные с клиента и отобразить их на сервере
+			t = channel.recv(100)
+			channel.send(t)
+			data += t.decode("utf-8")
+		channel.send("\r\n")
+		data = data.rstrip()
+		print(data)
+		if data == "exit":
+			run = False
+		#else 	
+	channel.close()
+		
 
 	
 def start_server(port, bind):
@@ -72,4 +103,10 @@ if __name__ == "__main__":
     parser.add_argument("--port", "-p", help="The port to bind the ssh server to (default 22)", default=8080, type=int, action="store")#фргументы
     parser.add_argument("--bind", "-b", help="The address to bind the ssh server to", default="", type=str, action="store")#pirt,bind
     args = parser.parse_args()#в переменной аргументы
-    start_server(args.port, args.bind)
+   
+    try:
+        start_server(args.port, args.bind)
+    except KeyboardInterrupt:
+        #print('\nEnd of process')
+        sys.exit(0)
+
