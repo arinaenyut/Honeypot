@@ -9,7 +9,7 @@ import sys
 
 logging.basicConfig(filename='logfile.log', format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
 host_key = paramiko.RSAKey(filename = 'server.key') #ключ хоста
-welcome_banner = "Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.4.0-121-generic x86_64)\r\n\n * Documentation:  https://help.ubuntu.com\r\n * Management:     https://landscape.canonical.com\n\r * Support:        https://ubuntu.com/advantage\r\n\n"
+welcome_banner = "Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.4.0-121-generic x86_64)\r\n\n * Documentation:  https://help.ubuntu.com\r\n * Management:     https://landscape.canonical.com\n\r * Support:        https://ubuntu.com/advantage\n\r\n"
 
 class SSH_Honeypot(paramiko.ServerInterface):
 
@@ -46,15 +46,21 @@ class SSH_Honeypot(paramiko.ServerInterface):
 def command_handling(data, channel):
 	answer = ""
 	if data == "ls":
-		answer = "hello.txt"
+		answer = "hello.txt  secret.txt"
 	elif data == "pwd":
 		answer = "/home"	
 	elif data == "cat hello.txt":
-		answer = "Hello" 
-	channel.send(answer + "\n\r")
+		answer = "Hello"
+	elif data == "cat secret.txt":
+		answer = "Ha-ha-ha"
+	elif data == "cat /etc/passwd":
+		answer = "mark:x:1001:1001:mark,,,:/home/mark:/bin/bash"
+	if answer != "":
+		answer += "\r\n"
+	channel.send(answer)
 	logging.info("New command: {}".format(data))
 		
-
+  
 def connection_handling(client, addr):
 	client_ip = addr[0]
 	logging.info('Connection from {}'.format(client_ip))
